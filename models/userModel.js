@@ -1,7 +1,8 @@
 const { DataTypes } = require('sequelize');
-const createDB = require('../config/db');
+const { createDB } = require('../config/db');
 
-const User = createDB.define("users",{ //can also use models to create thhis
+//can also use models to create this
+const User = createDB.define("users",{
     id:{
         primaryKey: true,
         allowNull: false,
