@@ -82,7 +82,7 @@ router.post("/signin", async(req, res ) => {
     }
 })
 
-router.get('/signout', (req,res) => {
+router.get("/signout", (req,res) => {
     //just delete the x-token, so that user wont be able to call any API after signout (will also delete the token from db or anywhere else if saved)
     try{
         res.clearCookie('x-token');
