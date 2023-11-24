@@ -6,7 +6,7 @@ const createDB = new Sequelize('test-db', 'user', 'pass', {
 });
 
 const connectDB = () => {
-    createDB.sync.then(() => {
+    createDB.sync().then(() => {
         console.log('DB connected successfully');
     })
     .catch((e) => {
