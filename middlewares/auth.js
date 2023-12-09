@@ -26,7 +26,7 @@ const isAuthenticated = async (req, res, next) => {
                 err: "User not found"
             });
         }
-        req.user = existingUser; // To avoid calling db again in next call because req will be same throughout the route
+        req.user = existingUser.dataValues; // To avoid calling db again in next call because req will be same throughout the route
         return next();
     } catch (e) {
         return res.status(500).send(e);
@@ -36,7 +36,7 @@ const isAuthenticated = async (req, res, next) => {
 const isSeller = (req, res, next) => {
     try {
         const user = req.user;
-        if ( user.dataValues.isSeller){
+        if ( user.isSeller){
             return next();
         }
         return res.status(401).json({
@@ -47,4 +47,18 @@ const isSeller = (req, res, next) => {
     }
 }
 
-module.exports = { isAuthenticated, isSeller };
+const isBuyer = (req, res, next) => {
+    try {
+        const user = req.user;
+        if ( !user.isSeller){
+            return next();
+        }
+        return res.status(401).json({
+            err: "You are not a buyer"
+        });
+    } catch (e) {
+        return res.status(500).send(e);
+    }
+}
+
+module.exports = { isAuthenticated, isSeller, isBuyer };

@@ -14,11 +14,11 @@ const connectDB = () => {
     })
 }
 
+module.exports = { createDB, connectDB }
+
 const userModel = require('../models/userModel');
 const orderModel = require('../models/orderModel');
 
 orderModel.belongsTo(userModel, {foreignKey: "buyerId"});  //buyerId in orderModel belongs to userModel (creating foreign key)
 userModel.hasMany(orderModel, {foreignKey: "id"}); //Single user multiple orders
 //The above line should be in their respective  models
-
-module.exports = { createDB, connectDB }
