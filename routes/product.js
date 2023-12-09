@@ -57,20 +57,41 @@ router.get('/get/all', isAuthenticated, async(req, res) => {
     }
 })
 
-router.post('/buy/:productId', isAuthenticated, isBuyer, async (req,res) => {
+router.post('/buy/:productId', isAuthenticated, isBuyer, async (req,res, next) => {
     try {
-        const product = await Product.findOne({
+        const productData = await Product.findOne({
             where : { id: req.params.productId}
-        })?.dataValues;
+        });
+        const product = productData.dataValues;
         if(!product) return res.status(404).json({ err: 'No product found'});
 
         const orderDetails = {
             productId: product.id,
-            buyerId: req.User.id,
+            buyerId: req.user.id,
         }
-        //Here we will get the card details of user in req.body, hard coded as of now
+        //Redirecting to stripe checkout
+        // const session = await stripe.checkout.sessions.create({
+        //     payment_method_types: ['card'],
+        //     line_items: [
+        //         {
+        //             price_data: {
+        //                 currency: 'inr',
+        //                 product_data: {
+        //                     name: product.name,
+        //                 },
+        //                 unit_amount: product.price * 100, // Convert price to cents
+        //             },
+        //             quantity: 1,
+        //         },
+        //     ],
+        //     mode: 'payment',
+        //     success_url: 'http://localhost:1338/success', // Redirect to this page on successful payment
+        //     cancel_url: 'http://localhost:1338/cancel', // Redirect to this page if the user cancels the payment
+        // });
+        // return res.redirect(303, session.url);
 
-        let paymentMethod = await stripe.paymentMethod.create({
+        //Below is the code to accept user card details from our website
+        let paymentMethod = await stripe.paymentMethods.create({
             type: "card",
             card: {
                 number: "4242424242424242",
@@ -80,7 +101,7 @@ router.post('/buy/:productId', isAuthenticated, isBuyer, async (req,res) => {
             }
         });
 
-        let paymentIntent = await stripe.paymentIntent.create({
+        let paymentIntent = await stripe.paymentIntents.create({
             amount: product.price,
             currency: "inr",
             payment_method_types: ["card"],
@@ -91,12 +112,13 @@ router.post('/buy/:productId', isAuthenticated, isBuyer, async (req,res) => {
         if(paymentIntent) {
             //means order is successful
             const createOrder = await Order.create(orderDetails);
+            //sending message to discord channel
             webhook.send({
                 content: `Hey ${req.User.name}, your order with order_id ${createOrder.id} is confirmed.`,
                 username: "Order Manager",
                 avatarURL: "https://gravatar.com/avatar/fe1df9507ff95ff31e01b8e285b2a821?s=400&d=robohash&r=x" //can generate it on google
             });
-            return res.status(200).json({
+            res.status(200).json({
                 createOrder
             });
         } else {
@@ -105,14 +127,16 @@ router.post('/buy/:productId', isAuthenticated, isBuyer, async (req,res) => {
                 username: "Order Manager",
                 avatarURL: "https://gravatar.com/avatar/fe1df9507ff95ff31e01b8e285b2a821?s=400&d=robohash&r=x" //can generate it on google
             });
-            return res.status(400).json({
+            res.status(400).json({
                 err: 'Payment failed'
             });
         }
         
     } catch (e) {
-        res.send(500).json({ err: e});
+        //console.log('error',e);
+        res.status(500).json({ err: e});
     }
+    return next();
 })
 
 module.exports = router;
